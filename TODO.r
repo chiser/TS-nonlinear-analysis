@@ -1,13 +1,12 @@
 ################## An R-script to import strokelitude data and to plot it in several ways
 
 ## if you did not do so yet, set the right working directory
-setwd("C:/Users/LocalAdmin/Desktop/scripts/repositories/StrokelitudeScripts")
+setwd("C:/Users/chise/Downloads/TS-nonlinear-analysis-master/TS-nonlinear-analysis-master")
 
 ## source the script with the functions needed for analysis
 source("StrokePrepFunctions.R")
-require("nonlinearTseries")
-
-setwd("C:/Users/LocalAdmin/Desktop/data/Nonlinearity results/c105c232_strokelitude")
+require(nonlinearTseries)
+require(signal)
 
   ##### read the data with the corresponding function
   flyTraces <- flyDataImport()
@@ -22,6 +21,8 @@ setwd("C:/Users/LocalAdmin/Desktop/data/Nonlinearity results/c105c232_strokelitu
   
   plot(flyTracesFiltered$Trace,type="l")
   
+  #This function estimates an appropiate time lag by using the autocorrelation function or the average mutual information .
+  
   LAG <- timeLag(flyTracesFiltered$Trace, technique = "ami",selection.method = "first.e.decay",lag.max = 20, do.plot = TRUE)  
   
   use.ts<-diff(flyTracesFiltered$Trace)
@@ -29,11 +30,12 @@ setwd("C:/Users/LocalAdmin/Desktop/data/Nonlinearity results/c105c232_strokelitu
   LAG <- timeLag(use.ts, technique = "ami",selection.method = "first.e.decay",lag.max = 20, do.plot = TRUE)
   
   
-  # selecting the embedding dim ---------------------------------------------
+  # This function determines the minimum embedding dimension from a scalar time series using the algorithm proposed by L. Cao
   
   emb.dim = estimateEmbeddingDim(use.ts, threshold = 0.95,
                                  time.lag = LAG, max.embedding.dim = 25)
   
+  #The space time separation is a broadly-used method of detecting non-stationarity and temporal correlations in the time series being analyzed. The space time separation plot is also used to select a proper Theiler window by selecting a temporal separation enough to saturate the contour lines.
   
   spaceTime = spaceTimePlot(time.series = use.ts,time.lag = LAG,
                             embedding.dim = emb.dim,
@@ -41,6 +43,8 @@ setwd("C:/Users/LocalAdmin/Desktop/data/Nonlinearity results/c105c232_strokelitu
   
 
   theilerw = 30
+  
+  #Functions for estimating the correlation sum and the correlation dimension of a dynamical system from 1-dimensional time series using Takens' vectors.
   
   corr.dim =  corrDim(use.ts, min.embedding.dim = emb.dim, 
                       max.embedding.dim = emb.dim + 7,
@@ -50,7 +54,7 @@ setwd("C:/Users/LocalAdmin/Desktop/data/Nonlinearity results/c105c232_strokelitu
                       theiler.window = theilerw,
                       do.plot = TRUE)
 
-  
+  #Several chaotic invariants are estimated by using linear regression. This function provides a common interface for the estimate of all these parameters (see corrDim, dfa and maxLyapunov for examples)
   
   D<- estimate(corr.dim,regression.range = c(regression.range.min,regression.range.max),use.embeddings = use.embeddings.min:use.embeddings.max,do.plot = T)
   
@@ -63,7 +67,7 @@ setwd("C:/Users/LocalAdmin/Desktop/data/Nonlinearity results/c105c232_strokelitu
     
     # obtenemos predicciones para las proximas 500 (prediction.step) muestras basandonos
     #en las 4000 primeras muestras de x
-    prediction = nonLinearPredict2 (use.ts[1:round(length(use.ts)/2)], embedding.dim = emb.dim, time.lag = LAG, radius = c(0.01,radius),
+    prediction = nonLinearPredict2(use.ts[1:round(length(use.ts)/2)], embedding.dim = emb.dim, time.lag = LAG, radius = c(0.01,radius),
                                     radius.increment = 0.02, prediction.step = 1:40)
     # comparamos... Fijate como la prediccion va empeorando a medida que pasa el tiempo. Esto
     # es tipico de sistemas no lineales
